@@ -15,6 +15,8 @@ class Settings(BaseSettings):
 
     top_k_chunks: int = 5
     file_store_dir: str = "data/files"
+    chunk_size: int = 512       # tokens per chunk
+    chunk_overlap: int = 50     # tokens of overlap between chunks
 
     @property
     def database_url(self) -> str:

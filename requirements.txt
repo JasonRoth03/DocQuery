@@ -6,3 +6,6 @@ asyncpg>=0.29
 pgvector>=0.3
 openai>=1.0
 python-multipart>=0.0.9
+tiktoken>=0.7
+pypdf>=4.0
+python-docx>=1.1

@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
-from app.models.document import Document
+from app.models.document import Chunk, Document
+from app.services.chunker import chunk_text
+from app.services.extractor import extract_text
 from app.services.file_store import file_store
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -11,33 +14,52 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 @router.post("/upload", status_code=201)
 async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
     data = await file.read()
+    mime = file.content_type or "application/octet-stream"
 
-    # 1. Persist raw file; get back a stable key
+    text = extract_text(data, mime, file.filename)
+
     key = await file_store.save(data, file.filename)
 
-    # 2. Create document row (no content column — text lives in chunks)
     doc = Document(
         filename=file.filename,
         file_key=key,
-        mime_type=file.content_type or "application/octet-stream",
+        mime_type=mime,
         size_bytes=len(data),
     )
     db.add(doc)
-    await db.flush()  # get doc.id before chunking
+    await db.flush()
 
-    # TODO: extract text from `data` (PDF → text, DOCX → text, plain text as-is)
-    # TODO: chunk_text(extracted_text) → chunks
-    # TODO: embed_texts([c.content for c in chunks]) → embeddings
-    # TODO: bulk-insert Chunk rows with embeddings
+    raw_chunks = chunk_text(
+        text,
+        chunk_size=settings.chunk_size,
+        overlap=settings.chunk_overlap,
+        model=settings.embedding_model,
+    )
+
+    db.add_all(
+        Chunk(
+            document_id=doc.id,
+            chunk_index=c.index,
+            content=c.content,
+            # embedding filled in by a background job or the embedder service
+        )
+        for c in raw_chunks
+    )
 
     await db.commit()
     await db.refresh(doc)
-    return {"id": str(doc.id), "filename": doc.filename, "size_bytes": doc.size_bytes}
+
+    return {
+        "id": str(doc.id),
+        "filename": doc.filename,
+        "size_bytes": doc.size_bytes,
+        "chunk_count": len(raw_chunks),
+    }
 
 
 @router.get("/")
 async def list_documents(db: AsyncSession = Depends(get_db)):
-    # TODO: return paginated list of documents (no content — just metadata)
+    # TODO: return paginated list of documents
     raise NotImplementedError
 
 
