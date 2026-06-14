@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS chunks (
     document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     chunk_index INTEGER NOT NULL,
     content     TEXT NOT NULL,
-    embedding   VECTOR(1536),
+    embedding   VECTOR(768),  -- nomic-embed-text; change to 1536 for text-embedding-3-small
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

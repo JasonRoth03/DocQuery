@@ -9,8 +9,10 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
 
     openai_api_key: str = ""
-    embedding_model: str = "text-embedding-3-small"
-    embedding_dimensions: int = 1536
+    embedding_provider: str = "ollama"          # "ollama" | "openai"
+    embedding_model: str = "nomic-embed-text"
+    embedding_dimensions: int = 768             # nomic=768, text-embedding-3-small=1536
+    ollama_base_url: str = "http://localhost:11434"
     chat_model: str = "gpt-4o"
 
     top_k_chunks: int = 5
