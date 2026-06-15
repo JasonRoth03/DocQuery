@@ -27,7 +27,13 @@ def _split(text: str, separator: str) -> list[str]:
     if separator == "":
         # character-level: only reached if all other separators failed
         return list(text)
-    return [s for s in text.split(separator) if s.strip()]
+    parts = [p for p in text.split(separator) if p.strip()]
+    # Re-attach the separator to all but the last piece so it survives the merge.
+    # Without this, splitting on " " turns "a b c" into ["a","b","c"] and spaces
+    # are lost when pieces are re-encoded individually during _merge_with_overlap.
+    if len(parts) > 1:
+        return [p + separator for p in parts[:-1]] + [parts[-1]]
+    return parts
 
 
 def _recursive_split(

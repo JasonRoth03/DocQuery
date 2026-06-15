@@ -5,6 +5,7 @@ from app.config import settings
 from app.database import get_db
 from app.models.document import Chunk, Document
 from app.services.chunker import chunk_text
+from app.services.embedder import embedder
 from app.services.extractor import extract_text
 from app.services.file_store import file_store
 
@@ -36,14 +37,16 @@ async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
         model=settings.embedding_model,
     )
 
+    vectors = await embedder.embed([c.content for c in raw_chunks])
+
     db.add_all(
         Chunk(
             document_id=doc.id,
             chunk_index=c.index,
             content=c.content,
-            # embedding filled in by a background job or the embedder service
+            embedding=vectors[i],
         )
-        for c in raw_chunks
+        for i, c in enumerate(raw_chunks)
     )
 
     await db.commit()
