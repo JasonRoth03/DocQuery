@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     embedding_model: str = "nomic-embed-text"
     embedding_dimensions: int = 768             # nomic=768, text-embedding-3-small=1536
     ollama_base_url: str = "http://localhost:11434"
-    chat_model: str = "gpt-4o"
+    chat_provider: str = "ollama"            # "ollama" | "openai"
+    chat_model: str = "qwen2.5:14b"          # ollama: any pulled model; openai: "gpt-4o"
 
     top_k_chunks: int = 5
     file_store_dir: str = "data/files"
